@@ -46,3 +46,14 @@ jobs:
       # 合成的最小 .app 跑；不执行真实安装动作，不碰 runner 的 ~/Applications 或 LaunchAgent。
       - name: Tests/install_check_test.sh
         run: ./Tests/install_check_test.sh
+
+      # 公开发布包的打包边界回归：版本一致性、bundle 与 DMG 白名单、发布脚本的安全边界、
+      # 产物落地的拒绝与清理语义。
+      #
+      # 它实际会做的事，全部发生在测试自己用 mktemp 建的临时目录里：`--check` 只读校验、
+      # `make -n` 干跑、`--commit-probe`（会真的写文件，走正式落地的同一个函数）、以及
+      # 在合成仓库里跑一次故意失败的完整脚本（那棵树没有真实源码，make 在编译前就失败）。
+      # 它**不做**完整编译、不打包 DMG、不挂载磁盘镜像、不签名、不安装，也不需要任何
+      # secret 或额外写权限。真实的构建 / 打包 / 挂载校验由维护者在本机完成（见 RELEASING.md）。
+      - name: Tests/release_check_test.sh
+        run: ./Tests/release_check_test.sh

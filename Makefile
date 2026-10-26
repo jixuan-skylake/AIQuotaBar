@@ -7,6 +7,12 @@ SOURCES := $(wildcard Sources/AIQuotaBar/*.swift)
 ICON := Resources/$(APP_NAME).icns
 CODESIGN_IDENTITY ?= -
 
+# 追加给 swiftc 的参数。默认为空，所以默认构建行为与以前完全一致（跟随宿主架构与
+# 宿主系统版本）。公开发布包用它把架构与最低系统钉死，例如：
+#   make app SWIFTFLAGS='-target arm64-apple-macos13.0'
+# Scripts/build-release.sh 就是这么调用的。
+SWIFTFLAGS ?=
+
 .PHONY: all app test selftest benchmark snapshot diagnostics dmg clean
 
 all: app
@@ -14,7 +20,7 @@ all: app
 app: $(ICON)
 	rm -rf "$(APP)"
 	mkdir -p "$(APP)/Contents/MacOS" "$(APP)/Contents/Resources" "$(DIST_DIR)"
-	swiftc -O $(SOURCES) -o "$(EXECUTABLE)" -framework AppKit -framework ApplicationServices -framework Security -framework JavaScriptCore
+	swiftc -O $(SWIFTFLAGS) $(SOURCES) -o "$(EXECUTABLE)" -framework AppKit -framework ApplicationServices -framework Security -framework JavaScriptCore
 	cp Info.plist "$(APP)/Contents/Info.plist"
 	cp "$(ICON)" "$(APP)/Contents/Resources/$(APP_NAME).icns"
 	cp README.md "$(APP)/Contents/Resources/README.md"
