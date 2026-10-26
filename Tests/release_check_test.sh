@@ -163,8 +163,11 @@ Contents/Resources/README.md
 Contents/Resources/Scripts/generate-app-icon.swift
 Contents/Resources/Scripts/install-launch-agent.sh
 Contents/_CodeSignature/CodeResources'
+# locale 会改变下划线与字母的排序；两侧都按字节排序，保留所有条目及重复项。
+# LC_ALL 仅作用于 sort，不改变其余测试或中文输出的 locale。
+EXPECTED_BUNDLE=$(print -r -- "$EXPECTED_BUNDLE" | LC_ALL=C sort)
 ACTUAL_BUNDLE=$(awk "/^readonly -a BUNDLE_WHITELIST=\(/,/^\)/" "$SCRIPT" \
-  | sed -n "s/^  '\(.*\)'$/\1/p" | sort)
+  | sed -n "s/^  '\(.*\)'$/\1/p" | LC_ALL=C sort)
 if [[ $EXPECTED_BUNDLE == $ACTUAL_BUNDLE ]]; then
   ok "bundle 白名单声明与期望完全一致（$(print -r -- "$ACTUAL_BUNDLE" | wc -l | tr -d ' ') 条）"
 else
