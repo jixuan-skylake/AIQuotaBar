@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>zh_CN</string>
+  <key>CFBundleDisplayName</key>
+  <string>AIQuotaBar</string>
+  <key>CFBundleExecutable</key>
+  <string>AIQuotaBar</string>
+  <key>CFBundleIdentifier</key>
+  <string>com.local.aiquotabar</string>
+  <key>CFBundleIconFile</key>
+  <string>AIQuotaBar</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>AIQuotaBar</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>0.2.18</string>
+  <key>CFBundleVersion</key>
+  <string>20</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>13.0</string>
+  <key>LSUIElement</key>
+  <true/>
+  <key>NSAppleEventsUsageDescription</key>
+  <string>AIQuotaBar 需要通过 Apple Events 刷新并读取已打开的 Codex 和 Claude 额度页文本。</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+</dict>
+</plist>
