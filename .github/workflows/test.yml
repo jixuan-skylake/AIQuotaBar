@@ -1,0 +1,48 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# 只读仓库内容；不写 checks/packages，也不使用任何 secret，不做任何部署。
+permissions:
+  contents: read
+
+jobs:
+  test:
+    # 需要 macOS 才有 swiftc / codesign / iconutil。工程本身面向 macOS 13+，
+    # 这里不钉具体镜像标签，避免镜像下线导致 CI 失效。
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain versions
+        run: |
+          sw_vers
+          swiftc --version
+
+      # `make test` = 构建 .app + plutil 校验 Info.plist + codesign --verify + --version + --self-test。
+      # 它完全本地、确定性：只用仓库内的合成文本和进程私有的临时目录，不需要 Chrome 自动化权限，
+      # 也不读取任何用户会话内容。自检会只读几个非秘密的界面偏好键（UserDefaults 里的刷新档位、
+      # 节能模式等）来选择断言分支，不写入任何用户偏好。
+      #
+      # 故意不在 CI 里跑的目标：
+      #   make snapshot、Tests/run_snapshot_test.sh  需要 Chrome 自动化权限，会 reload 真实额度页
+      #                                             （后者还依赖 ripgrep）
+      #   make diagnostics                          需要 Chrome 自动化权限；默认只枚举，
+      #                                             不 reload、不执行页面 JavaScript
+      #   make benchmark                            会读取 ~/.claude/projects
+      #
+      # 构建用 Makefile 的默认 ad-hoc 签名（CODESIGN_IDENTITY=-）；CI 里没有也不需要证书。
+      - name: make test
+        run: make test BUILD_DIR="${{ runner.temp }}/AIQuotaBar-build"
+
+      # 安装脚本的校验回归。只调用 install-launch-agent.sh --check，在任务私有的临时目录里用
+      # 合成的最小 .app 跑；不执行真实安装动作，不碰 runner 的 ~/Applications 或 LaunchAgent。
+      - name: Tests/install_check_test.sh
+        run: ./Tests/install_check_test.sh
