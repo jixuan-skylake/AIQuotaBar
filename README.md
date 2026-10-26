@@ -8,6 +8,44 @@ AIQuotaBar 是一个原生 macOS 状态栏应用，用来查看 Codex 和 Claude
 
 ---
 
+## 下载最新版（Apple Silicon）
+
+**[⬇ 下载 AIQuotaBar-macOS-arm64.dmg](https://github.com/jixuan-skylake/AIQuotaBar/releases/latest/download/AIQuotaBar-macOS-arm64.dmg)** —— 当前版本 **0.2.18**（build 20）
+
+- 适用于 **Apple Silicon（arm64）** 的 Mac，需要 **macOS 13.0 或更高版本**。
+- **没有提供、也没有测试 Intel 或 Universal 版本。**
+- 也可以直接去 [Releases 页面](https://github.com/jixuan-skylake/AIQuotaBar/releases/latest) 看全部资产与校验值。
+
+### 安装步骤
+
+1. 打开下载好的 DMG，把 **AIQuotaBar** 拖到 **Applications（应用程序）** 文件夹。
+2. 首次打开：**macOS 可能会阻止**打开这个 app。请先自己确认来源、并核对下面的校验值；确认没问题后打开「系统设置 → 隐私与安全性」，找到针对 AIQuotaBar 的提示，按那里给出的选项处理。
+3. 按下面 **使用前提：Chrome 与 macOS 权限** 一节配置 Chrome 与自动化权限，然后在菜单里点「立即刷新」。
+
+> ⚠️ 这个包**未经 Apple 公证（notarization）**，只有本地 ad-hoc 签名，所以 macOS 可能会阻止打开它。
+>
+> 具体提示文案与可用选项取决于你的 macOS 版本和设备管理策略。本文档**不保证**只会被拦一次，也**不保证**某个特定操作（例如右键打开）在所有机器上都有效；在某些策略或系统版本下，未经公证的 app 可能**根本无法打开**。Apple 的官方说明见 [如何打开来自身份不明开发者的 Mac App](https://support.apple.com/en-us/102445)。
+>
+> **不需要、也不建议**为此关闭 Gatekeeper 或系统完整性保护；本文档也不会提供移除 quarantine 属性之类的绕过命令。如果你的环境不允许运行未公证的 app，请改为从源码自行构建 —— 见下面的 **构建、测试与打包** 一节。
+
+### 校验下载（可选）
+
+Release 里附带 `SHA256SUMS`。把它和 DMG 放在同一个目录，然后：
+
+```zsh
+shasum -a 256 -c SHA256SUMS
+```
+
+### 关于更新
+
+这个应用**没有自动更新**，也不会联网检查新版本。要升级请回到 Releases 页面重新下载、重新拖一次。注意：换了构建之后 macOS 的自动化权限可能需要重新授权一次。
+
+## 版本与更新记录
+
+每个公开版本的新增、修复与已知限制都记在 **[CHANGELOG.md](CHANGELOG.md)**。
+
+0.2.18 是第一个公开安装包；在它之前的版本只存在于私有构建，没有公开发布历史，所以更新记录不会为它们编造条目。维护者的发布流程见 **[RELEASING.md](RELEASING.md)**。
+
 ## 功能概览
 
 - **状态栏常驻**：双行 `A`/`C` 剩余额度，或改为「最低额度」/「只显示 Claude」/「只显示 Codex」。
@@ -60,9 +98,20 @@ AIQuotaBar 是一个原生 macOS 状态栏应用，用来查看 Codex 和 Claude
 ```zsh
 make test     # 默认测试：plutil 校验 Info.plist、校验签名、--version、--self-test
 make app      # 只构建 .app
-make dmg      # 打包到 dist/AIQuotaBar.dmg
+make dmg      # 快速打一个本地 DMG 到 dist/AIQuotaBar.dmg（不是正式发布包）
 make selftest # 只跑 --self-test
 ```
+
+正式公开发布包走单独的入口，不要用 `make dmg` 代替：
+
+```zsh
+./Scripts/build-release.sh --check   # 只做前置校验，不构建、不打包
+./Scripts/build-release.sh           # 构建并打出 dist/AIQuotaBar-macOS-arm64.dmg + SHA256SUMS
+```
+
+它把架构与最低系统钉死为 `arm64-apple-macos13.0`、签名身份固定为 ad-hoc（不受环境里的 `CODESIGN_IDENTITY` 影响），在独立临时目录里构建、构建后跑 `make test`、从 Mach-O 的 load commands 核实架构与 `minos`、按白名单裁剪 app bundle、ad-hoc 重新签名并核实签名形态、`hdiutil verify`、只读挂载后逐文件比对并从挂载点跑 `--version` / `--self-test`。
+
+DMG 先在临时目录里生成并完成全部校验，**只有全部通过才会落地到输出目录**，所以失败时不会留下未经验证的半成品包。产物**永不覆盖**：三个输出叶子（DMG、`SHA256SUMS`、来源证据）任何一个已存在、或是符号链接 / 目录，都会直接拒绝 —— 要重新打包请先移走旧产物，或用 `--output` 指向一个新目录。落地用 `O_CREAT|O_EXCL` 原子独占创建加 SHA256 回验，而不是 `mv`，所以不会覆盖并发出现的文件，也不会沿着目录符号链接把产物写到别处；跨卷输出同样支持。它不安装、不启动 GUI、不读浏览器、不改任何用户配置。完整流程见 **[RELEASING.md](RELEASING.md)**。
 
 `make test` 是完全本地、确定性的：全部使用仓库内的合成文本与临时目录，不需要 Chrome 自动化权限，不读取用户会话内容。`--self-test` 结束时会打印自己的断言通过 / 失败计数，退出码非 0 即失败。
 
